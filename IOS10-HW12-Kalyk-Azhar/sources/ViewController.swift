@@ -1,19 +1,188 @@
-//
-//  ViewController.swift
-//  IOS10-HW12-Kalyk-Azhar
-//
-//  Created by Azhar Kalyk on 20.06.2023.
-//
 
 import UIKit
 
 class ViewController: UIViewController {
-
+    
+    var isWorkTime = false
+    var isStarted = false
+    var timer: Timer?
+    var time = 25
+    var isPaused = false
+    let shapeLayer = CAShapeLayer()
+    var pausedTime: CFTimeInterval = 0.0
+    var strokeEndAtPause: CGFloat = 0.0
+    
+    // MARK: - UI Elements
+    
+    private lazy var shapeView : UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(named: "circle")
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        return imageView
+    }()
+    
+    private lazy var label: UILabel = {
+        let label = UILabel()
+        label.textAlignment = .center
+        label.font = UIFont.systemFont(ofSize: 80)
+        label.textColor = UIColor(red: 0.92, green: 0.59, blue: 0.58, alpha: 1.00)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        
+        return label
+    }()
+    private lazy var button: UIButton = {
+        let button = UIButton()
+        button.setImage(UIImage(systemName: "play.fill"), for: .normal)
+        button.setImage(UIImage(systemName: "pause.circle"), for: .selected)
+        button.tintColor = UIColor(red: 0.80, green: 0.30, blue: 0.54, alpha: 1.00)
+        button.addTarget(self, action: #selector(buttonTapped), for: .touchUpInside)
+        button.transform = CGAffineTransform(scaleX: 2, y: 2)
+        button.frame = CGRect(x: button.frame.origin.x, y: button.frame.origin.y, width: 100, height: 100)
+        button.translatesAutoresizingMaskIntoConstraints = false
+    
+        return button
+    }()
+    
+    private lazy var imageView: UIImageView = {
+        let image = UIImage(named: "image")
+        let imageView = UIImageView(image: image)
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        return imageView
+    }()
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        self.animationCircular()
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+        
+        view.addSubview(imageView)
+        view.addSubview(shapeView)
+        view.addSubview(label)
+        view.addSubview(button)
+        
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: view.topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            shapeView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            shapeView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            shapeView.heightAnchor.constraint(equalToConstant: 300),
+            shapeView.widthAnchor.constraint(equalToConstant: 300),
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            button.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            button.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 7),
+        ])
+        updateUI()
     }
-
-
+    
+    @objc func buttonTapped() {
+        
+        if isStarted {
+            pauseTimer()
+            pauseLayer(layer: shapeLayer)
+            isStarted = false
+        } else {
+            if time == 0 {
+                isWorkTime = !isWorkTime
+                if isWorkTime {
+                    time = 15
+                } else {
+                    time = 25
+                }
+                isWorkTime = !isWorkTime
+            }
+            startTimer()
+            resumeLayer(layer: shapeLayer)
+            isStarted = true
+        }
+        button.isSelected = isStarted
+    }
+    
+    func startTimer() {
+        basicAnimation()
+        guard timer == nil else {
+            return
+        }
+        timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateTimer), userInfo: nil, repeats: true)
+    }
+    
+    func pauseTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    @objc func updateTimer() {
+        if time > 0 {
+            time -= 1
+        }
+        
+        if time == 0 {
+            pauseTimer()
+            isStarted = false
+        }
+        
+        if time == 0 {
+            if isWorkTime {
+                time = 25
+            } else {
+                time = 15
+            }
+            isWorkTime = !isWorkTime
+        }
+        updateUI()
+    }
+    
+    func updateUI() {
+        label.text = "\(time)"
+        button.isSelected = isStarted
+    }
+    
+    // MARK: - Animation
+    func animationCircular() {
+        let center = CGPoint(x: shapeView.frame.width / 2, y: shapeView.frame.height / 2)
+        let endAngle = (-CGFloat.pi / 2)
+        let startAngle = 2 * CGFloat.pi + endAngle
+        let circularPath = UIBezierPath(arcCenter: center, radius: 122, startAngle: startAngle, endAngle: endAngle, clockwise: false)
+        
+        shapeLayer.path = circularPath.cgPath
+        shapeLayer.lineWidth = 21
+        shapeLayer.fillColor = UIColor.clear.cgColor
+        shapeLayer.strokeEnd = 1
+        shapeLayer.lineCap = CAShapeLayerLineCap.round
+        shapeLayer.strokeColor = UIColor(red: 0.83, green: 0.77, blue: 0.98, alpha: 1.00).cgColor
+        shapeView.layer.addSublayer(shapeLayer)
+    }
+    
+    func basicAnimation() {
+        let basicAnimation = CABasicAnimation(keyPath: "strokeEnd")
+        basicAnimation.toValue = 0
+        basicAnimation.duration = CFTimeInterval(time)
+        basicAnimation.fillMode = CAMediaTimingFillMode.forwards
+        basicAnimation.isRemovedOnCompletion = false
+        shapeLayer.add(basicAnimation, forKey: "basicAnimation")
+    }
+    
+    func pauseLayer(layer: CAShapeLayer) {
+        let pausedTime = layer.convertTime(CACurrentMediaTime(), from: nil)
+        layer.speed = 0.0
+        layer.timeOffset = pausedTime
+        self.pausedTime = pausedTime
+        self.strokeEndAtPause = layer.strokeEnd
+    }
+    
+    func resumeLayer(layer: CAShapeLayer) {
+        let pausedTime = self.pausedTime
+        let timeSincePause = layer.convertTime(CACurrentMediaTime(), from: nil) - pausedTime
+        layer.speed = 1.0
+        layer.timeOffset = 0.0
+        layer.beginTime = 0.0
+        layer.strokeEnd = self.strokeEndAtPause
+    }
 }
-
