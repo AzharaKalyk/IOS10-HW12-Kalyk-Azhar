@@ -3,18 +3,18 @@ import UIKit
 
 class ViewController: UIViewController {
     
-    var isWorkTime = false
-    var isStarted = false
-    var timer: Timer?
-    var time = 25
-    var isPaused = false
-    let shapeLayer = CAShapeLayer()
-    var pausedTime: CFTimeInterval = 0.0
-    var strokeEndAtPause: CGFloat = 0.0
-    
+    private var isWorkTime = false
+    private var isStarted = false
+    private var timer: Timer?
+    private var time = 25
+    private let workTime = 25
+    private let restTime = 15
+    private var isPaused = false
+    private let shapeLayer = CAShapeLayer()
+   
     // MARK: - UI Elements
     
-    private lazy var shapeView : UIImageView = {
+    private lazy var shapeView: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "circle")
         imageView.translatesAutoresizingMaskIntoConstraints = false
@@ -25,12 +25,14 @@ class ViewController: UIViewController {
     private lazy var label: UILabel = {
         let label = UILabel()
         label.textAlignment = .center
+        label.text = "\(Int(workTime))"
         label.font = UIFont.systemFont(ofSize: 80)
         label.textColor = UIColor(red: 0.92, green: 0.59, blue: 0.58, alpha: 1.00)
         label.translatesAutoresizingMaskIntoConstraints = false
         
         return label
     }()
+    
     private lazy var button: UIButton = {
         let button = UIButton()
         button.setImage(UIImage(systemName: "play.fill"), for: .normal)
@@ -40,7 +42,7 @@ class ViewController: UIViewController {
         button.transform = CGAffineTransform(scaleX: 2, y: 2)
         button.frame = CGRect(x: button.frame.origin.x, y: button.frame.origin.y, width: 100, height: 100)
         button.translatesAutoresizingMaskIntoConstraints = false
-    
+        
         return button
     }()
     
@@ -54,17 +56,24 @@ class ViewController: UIViewController {
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        self.animationCircular()
+        animationCircular()
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        setupHierarchy()
+        setupLayout()
+    }
+    
+    private func setupHierarchy() {
         view.addSubview(imageView)
         view.addSubview(shapeView)
         view.addSubview(label)
         view.addSubview(button)
-        
+    }
+    
+    private func setupLayout() {
         NSLayoutConstraint.activate([
             imageView.topAnchor.constraint(equalTo: view.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -83,30 +92,21 @@ class ViewController: UIViewController {
     }
     
     @objc func buttonTapped() {
-        
+        isStarted.toggle()
         if isStarted {
-            pauseTimer()
-            pauseLayer(layer: shapeLayer)
-            isStarted = false
+            if timer == nil {
+                timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateTimer), userInfo: nil, repeats: true)
+                resumeLayer(layer: shapeLayer)
+                progressAnimation(layer: shapeLayer, duration: TimeInterval(time))}
         } else {
-            if time == 0 {
-                isWorkTime = !isWorkTime
-                if isWorkTime {
-                    time = 15
-                } else {
-                    time = 25
-                }
-                isWorkTime = !isWorkTime
-            }
-            startTimer()
-            resumeLayer(layer: shapeLayer)
-            isStarted = true
+            timer?.invalidate()
+            timer = nil
+            pauseLayer(layer: shapeLayer)
         }
-        button.isSelected = isStarted
+        updateUI()
     }
     
     func startTimer() {
-        basicAnimation()
         guard timer == nil else {
             return
         }
@@ -119,38 +119,32 @@ class ViewController: UIViewController {
     }
     
     @objc func updateTimer() {
-        if time > 0 {
-            time -= 1
+        label.text = "\(Int(time))"
+        guard time > 0 else {
+            timer?.invalidate()
+            timer = nil
+            time = isWorkTime ? workTime : restTime
+            isWorkTime.toggle()
+            isPaused = false
+            updateUI()
+            return
         }
-        
-        if time == 0 {
-            pauseTimer()
-            isStarted = false
-        }
-        
-        if time == 0 {
-            if isWorkTime {
-                time = 25
-            } else {
-                time = 15
-            }
-            isWorkTime = !isWorkTime
-        }
+        time -= 1
         updateUI()
     }
     
     func updateUI() {
-        label.text = "\(time)"
+        label.text = "\(Int(time))"
         button.isSelected = isStarted
     }
     
     // MARK: - Animation
+    
     func animationCircular() {
         let center = CGPoint(x: shapeView.frame.width / 2, y: shapeView.frame.height / 2)
         let endAngle = (-CGFloat.pi / 2)
         let startAngle = 2 * CGFloat.pi + endAngle
         let circularPath = UIBezierPath(arcCenter: center, radius: 122, startAngle: startAngle, endAngle: endAngle, clockwise: false)
-        
         shapeLayer.path = circularPath.cgPath
         shapeLayer.lineWidth = 21
         shapeLayer.fillColor = UIColor.clear.cgColor
@@ -160,29 +154,27 @@ class ViewController: UIViewController {
         shapeView.layer.addSublayer(shapeLayer)
     }
     
-    func basicAnimation() {
-        let basicAnimation = CABasicAnimation(keyPath: "strokeEnd")
-        basicAnimation.toValue = 0
-        basicAnimation.duration = CFTimeInterval(time)
-        basicAnimation.fillMode = CAMediaTimingFillMode.forwards
-        basicAnimation.isRemovedOnCompletion = false
-        shapeLayer.add(basicAnimation, forKey: "basicAnimation")
+    func progressAnimation(layer: CAShapeLayer, duration: TimeInterval) {
+        let circularProgressAnimation = CABasicAnimation(keyPath: "strokeEnd")
+        layer.strokeEnd = 1
+        circularProgressAnimation.duration = duration
+        circularProgressAnimation.toValue = 0
+        circularProgressAnimation.fillMode = .forwards
+        circularProgressAnimation.isRemovedOnCompletion = false
+        layer.add(circularProgressAnimation, forKey: "progressAnimation")
     }
     
     func pauseLayer(layer: CAShapeLayer) {
         let pausedTime = layer.convertTime(CACurrentMediaTime(), from: nil)
         layer.speed = 0.0
         layer.timeOffset = pausedTime
-        self.pausedTime = pausedTime
-        self.strokeEndAtPause = layer.strokeEnd
     }
     
     func resumeLayer(layer: CAShapeLayer) {
-        let pausedTime = self.pausedTime
-        let timeSincePause = layer.convertTime(CACurrentMediaTime(), from: nil) - pausedTime
+        let pausedTime: CFTimeInterval = layer.timeOffset
         layer.speed = 1.0
         layer.timeOffset = 0.0
-        layer.beginTime = 0.0
-        layer.strokeEnd = self.strokeEndAtPause
+        let timeSincePause: CFTimeInterval = layer.convertTime(CACurrentMediaTime(), from: nil) - pausedTime
+        layer.beginTime = timeSincePause
     }
 }
