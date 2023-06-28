@@ -3,15 +3,15 @@ import UIKit
 
 class ViewController: UIViewController {
     
-    private var isWorkTime = false
+    private var isWorkTime = true
     private var isStarted = false
-    private var timer: Timer?
-    private var time = 25
-    private let workTime = 25
-    private let restTime = 15
+    private var timer = Timer()
+    private var time = 0.0
+    private let workTime = 25.0
+    private let restTime = 15.0
     private var isPaused = false
     private let shapeLayer = CAShapeLayer()
-   
+    
     // MARK: - UI Elements
     
     private lazy var shapeView: UIImageView = {
@@ -88,54 +88,32 @@ class ViewController: UIViewController {
             button.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             button.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 7),
         ])
-        updateUI()
     }
     
     @objc func buttonTapped() {
         isStarted.toggle()
+        button.isSelected = isStarted
         if isStarted {
-            if timer == nil {
-                timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateTimer), userInfo: nil, repeats: true)
-                resumeLayer(layer: shapeLayer)
-                progressAnimation(layer: shapeLayer, duration: TimeInterval(time))}
-        } else {
-            timer?.invalidate()
-            timer = nil
-            pauseLayer(layer: shapeLayer)
-        }
-        updateUI()
-    }
-    
-    func startTimer() {
-        guard timer == nil else {
+            timer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(updateTimer), userInfo: nil, repeats: true)
+            resumeLayer(layer: shapeLayer)
+            button.setImage(UIImage(systemName: "pause.circle"), for: .normal)
             return
         }
-        timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateTimer), userInfo: nil, repeats: true)
-    }
-    
-    func pauseTimer() {
-        timer?.invalidate()
-        timer = nil
+        timer.invalidate()
+        
+        pauseLayer(layer: shapeLayer)
+        button.setImage(UIImage(systemName: "play.fill"), for: .normal)
     }
     
     @objc func updateTimer() {
         label.text = "\(Int(time))"
-        guard time > 0 else {
-            timer?.invalidate()
-            timer = nil
-            time = isWorkTime ? workTime : restTime
-            isWorkTime.toggle()
-            isPaused = false
-            updateUI()
+        guard time <= 0 else {
+            time -= Double(0.01)
             return
         }
-        time -= 1
-        updateUI()
-    }
-    
-    func updateUI() {
-        label.text = "\(Int(time))"
-        button.isSelected = isStarted
+        time = isWorkTime ? workTime : restTime
+        isWorkTime.toggle()
+        progressAnimation(layer: shapeLayer, duration: time)
     }
     
     // MARK: - Animation
@@ -165,7 +143,7 @@ class ViewController: UIViewController {
     }
     
     func pauseLayer(layer: CAShapeLayer) {
-        let pausedTime = layer.convertTime(CACurrentMediaTime(), from: nil)
+        let pausedTime: CFTimeInterval = layer.convertTime(CACurrentMediaTime(), from: nil)
         layer.speed = 0.0
         layer.timeOffset = pausedTime
     }
@@ -174,6 +152,7 @@ class ViewController: UIViewController {
         let pausedTime: CFTimeInterval = layer.timeOffset
         layer.speed = 1.0
         layer.timeOffset = 0.0
+        layer.beginTime = 0.0
         let timeSincePause: CFTimeInterval = layer.convertTime(CACurrentMediaTime(), from: nil) - pausedTime
         layer.beginTime = timeSincePause
     }
