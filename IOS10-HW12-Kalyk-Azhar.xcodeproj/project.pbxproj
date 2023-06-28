@@ -56,15 +56,39 @@
 		3BD8AFD32A4203A4002678A3 /* IOS10-HW12-Kalyk-Azhar */ = {
 			isa = PBXGroup;
 			children = (
-				3BD8AFD42A4203A4002678A3 /* AppDelegate.swift */,
-				3BD8AFD62A4203A4002678A3 /* SceneDelegate.swift */,
-				3BD8AFD82A4203A4002678A3 /* ViewController.swift */,
-				3BD8AFDA2A4203A4002678A3 /* Main.storyboard */,
-				3BD8AFDD2A4203A5002678A3 /* Assets.xcassets */,
-				3BD8AFDF2A4203A5002678A3 /* LaunchScreen.storyboard */,
+				3BD8AFE82A420C99002678A3 /* app */,
+				3BD8AFE92A420CAC002678A3 /* sources */,
 				3BD8AFE22A4203A5002678A3 /* Info.plist */,
 			);
 			path = "IOS10-HW12-Kalyk-Azhar";
+			sourceTree = "<group>";
+		};
+		3BD8AFE82A420C99002678A3 /* app */ = {
+			isa = PBXGroup;
+			children = (
+				3BD8AFD62A4203A4002678A3 /* SceneDelegate.swift */,
+				3BD8AFD42A4203A4002678A3 /* AppDelegate.swift */,
+			);
+			path = app;
+			sourceTree = "<group>";
+		};
+		3BD8AFE92A420CAC002678A3 /* sources */ = {
+			isa = PBXGroup;
+			children = (
+				3BD8AFD82A4203A4002678A3 /* ViewController.swift */,
+				3BD8AFEA2A420CD4002678A3 /* resources */,
+			);
+			path = sources;
+			sourceTree = "<group>";
+		};
+		3BD8AFEA2A420CD4002678A3 /* resources */ = {
+			isa = PBXGroup;
+			children = (
+				3BD8AFDA2A4203A4002678A3 /* Main.storyboard */,
+				3BD8AFDD2A4203A5002678A3 /* Assets.xcassets */,
+				3BD8AFDF2A4203A5002678A3 /* LaunchScreen.storyboard */,
+			);
+			path = resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
